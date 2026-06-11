@@ -28,7 +28,7 @@ public class AdminService {
 
 
     public Page<UserResponse> getAllUsers(String search, Pageable pageable) {
-        return userRepository.searchUsers(search, pageable).map(this::mapToUserResponse);
+        return userRepository.searchUsers(search, pageable).map(UserResponse::from);
     }
 
     @Transactional
@@ -44,7 +44,7 @@ public class AdminService {
                 .role(role)
                 .build();
 
-        return mapToUserResponse(userRepository.save(user));
+        return UserResponse.from(userRepository.save(user));
     }
 
     @Transactional
@@ -63,7 +63,7 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy quyền: " + request.getRoleName()));
         user.setRole(role);
 
-        return mapToUserResponse(userRepository.save(user));
+        return UserResponse.from(userRepository.save(user));
     }
 
     @Transactional
@@ -73,7 +73,7 @@ public class AdminService {
 
 
     public Page<CourseResponse> getAllCourses(String search, Pageable pageable) {
-        return courseRepository.searchCourses(search, pageable).map(this::mapToCourseResponse);
+        return courseRepository.searchCourses(search, pageable).map(CourseResponse::from);
     }
 
     @Transactional
@@ -88,7 +88,7 @@ public class AdminService {
                 .credit(request.getCredit())
                 .build();
 
-        return mapToCourseResponse(courseRepository.save(course));
+        return CourseResponse.from(courseRepository.save(course));
     }
 
     @Transactional
@@ -100,31 +100,11 @@ public class AdminService {
         course.setCourseName(request.getCourseName());
         course.setCredit(request.getCredit());
 
-        return mapToCourseResponse(courseRepository.save(course));
+        return CourseResponse.from(courseRepository.save(course));
     }
 
     @Transactional
     public void deleteCourse(Long id) {
         courseRepository.deleteById(id);
-    }
-
-
-    private UserResponse mapToUserResponse(User user) {
-        return UserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole().getRoleName())
-                .isActive(user.getIsActive())
-                .build();
-    }
-
-    private CourseResponse mapToCourseResponse(Course course) {
-        return CourseResponse.builder()
-                .id(course.getId())
-                .courseCode(course.getCourseCode())
-                .courseName(course.getCourseName())
-                .credit(course.getCredit())
-                .build();
     }
 }

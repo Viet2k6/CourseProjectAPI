@@ -44,12 +44,7 @@ public class StudentService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
 
         return student.getCourses().stream()
-                .map(course -> CourseResponse.builder()
-                        .id(course.getId())
-                        .courseCode(course.getCourseCode())
-                        .courseName(course.getCourseName())
-                        .credit(course.getCredit())
-                        .build())
+                .map(CourseResponse::from)
                 .collect(Collectors.toList());
     }
 }

@@ -19,7 +19,6 @@ public class BaseResponse<T> {
     private String path;
     private LocalDateTime timestamp;
 
-    // Hàm trả về thành công (Đúng chuẩn SRS)
     public static <T> BaseResponse<T> success(String message, T data) {
         BaseResponse<T> response = new BaseResponse<>();
         response.setSuccess(true);
@@ -28,7 +27,6 @@ public class BaseResponse<T> {
         return response;
     }
 
-    // Hàm trả về lỗi (Đúng chuẩn SRS)
     public static BaseResponse<Object> error(int status, String error, String message, String path) {
         BaseResponse<Object> response = new BaseResponse<>();
         response.setSuccess(false);
