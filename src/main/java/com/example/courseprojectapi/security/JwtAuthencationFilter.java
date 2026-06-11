@@ -4,19 +4,17 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import com.example.courseprojectapi.model.entity.User;
 import com.example.courseprojectapi.repository.TokenBlacklistRepository;
 import com.example.courseprojectapi.security.jwt.JwtProvider;
-import com.example.courseprojectapi.security.principle.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 public class JwtAuthencationFilter extends OncePerRequestFilter {
@@ -25,23 +23,30 @@ public class JwtAuthencationFilter extends OncePerRequestFilter {
     
     @Autowired
     private TokenBlacklistRepository tokenBlacklistRepository;
+    
+    @Autowired
+    private UserDetailServiceCustom userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String token = getTokenFromHeader(request);
-
-        if(token != null && jwtProvider.validateAccessToken(token) && !tokenBlacklistRepository.existsByTokenString(token)) {
-            User user = User.builder()
-                    .username(jwtProvider.getUsernameFromToken(token))
-                    .build();
-            
-            List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + jwtProvider.getRoleFromToken(token))
-            );
-            
-            UserPrincipal userPrincipal = new UserPrincipal(user, authorities);
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userPrincipal, null, authorities);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        try {
+            String token = getTokenFromHeader(request);
+            if (token != null && jwtProvider.validateAccessToken(token)) {
+                if (!tokenBlacklistRepository.existsByTokenString(token)) {
+                    String username = jwtProvider.getUsernameFromToken(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    
+                    if (userDetails != null && userDetails.isEnabled()) {
+                        UsernamePasswordAuthenticationToken authentication = 
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Không thể xác thực người dùng: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);
