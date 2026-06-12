@@ -70,10 +70,4 @@ public class JwtProvider {
         return Jwts.parserBuilder().setSigningKey(key).build()
                 .parseClaimsJws(token).getBody().getSubject();
     }
-
-    public String getRoleFromToken(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
-        return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token).getBody().get("role").toString();
-    }
 }

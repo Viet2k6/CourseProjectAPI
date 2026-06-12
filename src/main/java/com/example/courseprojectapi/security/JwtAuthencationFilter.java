@@ -56,7 +56,7 @@ public class JwtAuthencationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             log.error("Lỗi xác thực người dùng: {}", e.getMessage());
-            handleError(response, HttpServletResponse.SC_UNAUTHORIZED, "Lỗi xác thực: " + e.getMessage(), request.getRequestURI());
+            handleError(response, 401, "Lỗi xác thực: " + e.getMessage(), request.getRequestURI());
         }
     }
 
