@@ -16,6 +16,4 @@ public class MaterialRequest {
 
     @NotNull(message = "ID khóa học không được để trống")
     private Long courseId;
-    
-
 }

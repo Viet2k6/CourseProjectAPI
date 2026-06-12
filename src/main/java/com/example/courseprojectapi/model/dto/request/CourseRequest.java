@@ -21,4 +21,6 @@ public class CourseRequest {
     @NotNull(message = "Số tín chỉ không được để trống")
     @Min(value = 1, message = "Số tín chỉ phải lớn hơn 0")
     private Integer credit;
+
+    private Long lecturerId;
 }

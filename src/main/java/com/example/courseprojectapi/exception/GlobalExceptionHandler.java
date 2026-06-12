@@ -26,6 +26,22 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<?> handleNotFound(NotFoundException ex, HttpServletRequest req) {
+        return new ResponseEntity<>(
+                BaseResponse.error(404, "Không tìm thấy", ex.getMessage(), req.getRequestURI()), 
+                HttpStatus.NOT_FOUND
+        );
+    }
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<?> handleCustomException(CustomException ex, HttpServletRequest req) {
+        return new ResponseEntity<>(
+                BaseResponse.error(ex.getStatus().value(), "Lỗi nghiệp vụ", ex.getMessage(), req.getRequestURI()), 
+                ex.getStatus()
+        );
+    }
+
     @ExceptionHandler({RuntimeException.class, Exception.class})
     public ResponseEntity<?> handleAllErrors(Exception ex, HttpServletRequest req) {
         return new ResponseEntity<>(

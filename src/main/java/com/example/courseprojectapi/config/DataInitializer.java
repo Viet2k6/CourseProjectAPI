@@ -20,24 +20,27 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         initializeRoles();
-        initializeAdmin();
+        initializeUsers();
     }
 
     private void initializeRoles() {
         if (roleRepository.findByRoleName("ADMIN").isEmpty()) {
             roleRepository.save(Role.builder().roleName("ADMIN").build());
         }
+
         if (roleRepository.findByRoleName("LECTURER").isEmpty()) {
             roleRepository.save(Role.builder().roleName("LECTURER").build());
         }
+
         if (roleRepository.findByRoleName("STUDENT").isEmpty()) {
             roleRepository.save(Role.builder().roleName("STUDENT").build());
         }
     }
 
-    private void initializeAdmin() {
+    private void initializeUsers() {
         if (userRepository.findByUsername("admin").isEmpty()) {
             Role adminRole = roleRepository.findByRoleName("ADMIN").orElseThrow();
+
             User admin = User.builder()
                     .username("admin")
                     .email("admin@gmail.com")
@@ -45,7 +48,22 @@ public class DataInitializer implements CommandLineRunner {
                     .isActive(true)
                     .role(adminRole)
                     .build();
+
             userRepository.save(admin);
+        }
+
+        if (userRepository.findByUsername("lecturer").isEmpty()) {
+            Role lecturerRole = roleRepository.findByRoleName("LECTURER").orElseThrow();
+
+            User lecturer = User.builder()
+                    .username("lecturer")
+                    .email("lecturer@gmail.com")
+                    .passwordHash(passwordEncoder.encode("12345678"))
+                    .isActive(true)
+                    .role(lecturerRole)
+                    .build();
+
+            userRepository.save(lecturer);
         }
     }
 }
