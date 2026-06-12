@@ -1,12 +1,15 @@
 package com.example.courseprojectapi.security;
 
+import com.example.courseprojectapi.model.dto.response.BaseResponse;
+import com.example.courseprojectapi.repository.TokenBlacklistRepository;
+import com.example.courseprojectapi.security.jwt.JwtProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import com.example.courseprojectapi.repository.TokenBlacklistRepository;
-import com.example.courseprojectapi.security.jwt.JwtProvider;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,43 +20,58 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class JwtAuthencationFilter extends OncePerRequestFilter {
-    @Autowired
-    private JwtProvider jwtProvider;
-    
-    @Autowired
-    private TokenBlacklistRepository tokenBlacklistRepository;
-    
-    @Autowired
-    private UserDetailServiceCustom userDetailsService;
+
+    private final JwtProvider jwtProvider;
+    private final TokenBlacklistRepository tokenBlacklistRepository;
+    private final UserDetailServiceCustom userDetailsService;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             String token = getTokenFromHeader(request);
-            if (token != null) {
-                if (!tokenBlacklistRepository.existsByTokenString(token)) {
-                    if (jwtProvider.validateAccessToken(token)) {
-                        String username = jwtProvider.getUsernameFromToken(token);
-                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                        if (userDetails != null && userDetails.isEnabled()) {
-                            UsernamePasswordAuthenticationToken authentication = 
+            if (token != null) {
+                if (tokenBlacklistRepository.existsByTokenString(token)) {
+                    handleError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token đã bị vô hiệu hóa (Blacklisted)", request.getRequestURI());
+                    return;
+                }
+
+                if (jwtProvider.validateAccessToken(token)) {
+                    String username = jwtProvider.getUsernameFromToken(token);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                    if (userDetails != null && userDetails.isEnabled()) {
+                        UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                            SecurityContextHolder.getContext().setAuthentication(authentication);
-                        }
+
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
                     }
                 }
             }
+            filterChain.doFilter(request, response);
         } catch (Exception e) {
-            logger.error("Không thể xác thực người dùng: " + e.getMessage());
+            log.error("Lỗi xác thực người dùng: {}", e.getMessage());
+            handleError(response, HttpServletResponse.SC_UNAUTHORIZED, "Lỗi xác thực: " + e.getMessage(), request.getRequestURI());
         }
-
-        filterChain.doFilter(request, response);
     }
 
-    public String getTokenFromHeader(HttpServletRequest request) {
+    private void handleError(HttpServletResponse response, int status, String message, String path) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+
+        response.getWriter().write(
+                objectMapper.writeValueAsString(
+                        BaseResponse.error(status, "Unauthorized", message, path)
+                )
+        );
+    }
+
+    private String getTokenFromHeader(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
         if (header == null || !header.startsWith("Bearer ")) {
             return null;

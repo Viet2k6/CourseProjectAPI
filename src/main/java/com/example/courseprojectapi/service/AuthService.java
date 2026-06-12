@@ -81,9 +81,8 @@ public class AuthService {
         String headerAuth = request.getHeader("Authorization");
         if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
             String token = headerAuth.substring(7);
-            String username = jwtProvider.getUsernameFromToken(token);
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new NotFoundException("Người dùng không tồn tại"));
+            UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            User user = userPrincipal.getUser();
 
             TokenBlacklist blacklist = TokenBlacklist.builder()
                     .tokenString(token)

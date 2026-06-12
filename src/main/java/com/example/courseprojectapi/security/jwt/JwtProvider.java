@@ -11,12 +11,19 @@ import java.util.Date;
 
 @Component
 public class JwtProvider {
+    
     @Value("${app.jwt.secret}")
     private String secret;
 
+    @Value("${app.jwt.expirationMs}")
+    private long accessTokenExpiration;
+
+    @Value("${app.jwt.refreshExpirationMs}")
+    private long refreshTokenExpiration;
+
     public String generateAccessToken(User user) {
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
-        Date date = new Date(new Date().getTime() + 300000);
+        Date date = new Date(new Date().getTime() + accessTokenExpiration);
         return Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("type", "access_token")
@@ -28,7 +35,7 @@ public class JwtProvider {
 
     public String generateRefreshToken(User user) {
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
-        Date date = new Date(new Date().getTime() + (86400000L * 30));
+        Date date = new Date(new Date().getTime() + refreshTokenExpiration);
         return Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("type", "refresh_token")
