@@ -77,13 +77,27 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(HttpServletRequest request) {
+    public void logout(HttpServletRequest request, String refreshToken) {
         String headerAuth = request.getHeader("Authorization");
         if (headerAuth != null && headerAuth.startsWith("Bearer ")) {
-            String token = headerAuth.substring(7);
-            UserPrincipal userPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            User user = userPrincipal.getUser();
+            String accessToken = headerAuth.substring(7);
+            addToBlacklist(accessToken);
+        }
 
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            addToBlacklist(refreshToken);
+        }
+    }
+
+    private void addToBlacklist(String token) {
+        if (!tokenBlacklistRepository.existsByTokenString(token)) {
+            User user = null;
+            try {
+                String username = jwtProvider.getUsernameFromToken(token);
+                user = userRepository.findByUsername(username).orElse(null);
+            } catch (Exception e) {
+            }
+            
             TokenBlacklist blacklist = TokenBlacklist.builder()
                     .tokenString(token)
                     .revokedAt(LocalDateTime.now())
@@ -94,17 +108,25 @@ public class AuthService {
     }
 
     public AuthResponse refreshToken(String refreshToken) {
-        if (refreshToken != null && jwtProvider.validateRefreshToken(refreshToken)) {
-            String username = jwtProvider.getUsernameFromToken(refreshToken);
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new NotFoundException("Người dùng không tồn tại"));
+    if (tokenBlacklistRepository.existsByTokenString(refreshToken)) {
+        throw new CustomException("Refresh Token đã bị vô hiệu hóa", HttpStatus.UNAUTHORIZED);
+    }
 
-            String newAccessToken = jwtProvider.generateAccessToken(user);
-            return AuthResponse.builder()
-                    .accessToken(newAccessToken)
-                    .refreshToken(refreshToken)
-                    .build();
+    if (refreshToken != null && jwtProvider.validateRefreshToken(refreshToken)) {
+        String username = jwtProvider.getUsernameFromToken(refreshToken);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new NotFoundException("Người dùng không tồn tại"));
+
+        if (!user.getIsActive()) {
+            throw new CustomException("Tài khoản của bạn đã bị khóa", HttpStatus.FORBIDDEN);
         }
+
+        String newAccessToken = jwtProvider.generateAccessToken(user);
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
         throw new CustomException("Refresh Token không hợp lệ hoặc đã hết hạn", HttpStatus.UNAUTHORIZED);
     }
 

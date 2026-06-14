@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -31,13 +33,15 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletRequest request) {
-        authService.logout(request);
+    public ResponseEntity<?> logout(HttpServletRequest request, @RequestBody(required = false) Map<String, String> body) {
+        String refreshToken = (body != null) ? body.get("refreshToken") : null;
+        authService.logout(request, refreshToken);
         return ResponseEntity.ok(BaseResponse.success("Đăng xuất thành công", null));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@RequestBody String refreshToken) {
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refreshToken");
         return ResponseEntity.ok(BaseResponse.success("Làm mới token thành công", authService.refreshToken(refreshToken)));
     }
 
@@ -50,6 +54,6 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         authService.forgotPassword(email);
-        return ResponseEntity.ok(BaseResponse.success("Mật khẩu đã được đặt lại thành công. Vui lòng kiểm tra thông báo mới nhất.", null));
+        return ResponseEntity.ok(BaseResponse.success("Mật khẩu đã được đặt lại thành công.", null));
     }
 }

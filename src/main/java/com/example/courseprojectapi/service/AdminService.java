@@ -120,10 +120,9 @@ public class AdminService {
         if (request.getLecturerId() != null) {
             User lecturer = userRepository.findById(request.getLecturerId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy giảng viên"));
-            
-            // Kiểm tra xem User được gán có đúng là LECTURER không
+
             if (!"LECTURER".equals(lecturer.getRole().getRoleName())) {
-                throw new CustomException("Người dùng được chọn không phải là Giảng viên", HttpStatus.BAD_REQUEST);
+                throw new CustomException("Người dùng được chọn không phải là giảng viên", HttpStatus.BAD_REQUEST);
             }
             
             course.setLecturer(lecturer);

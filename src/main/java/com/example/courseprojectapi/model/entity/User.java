@@ -40,12 +40,12 @@ public class User {
     @OneToMany(mappedBy = "lecturer")
     private List<Course> lecturedCourses;
 
-    @OneToMany(mappedBy = "student")
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
     private List<Submission> studentSubmissions;
 
-    @OneToMany(mappedBy = "lecturer")
+    @OneToMany(mappedBy = "lecturer", cascade = CascadeType.ALL)
     private List<Submission> gradedSubmissions;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<TokenBlacklist> blacklistedTokens;
-}
+    }

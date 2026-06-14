@@ -33,10 +33,9 @@ public class JwtAuthencationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             String token = getTokenFromHeader(request);
-
             if (token != null) {
                 if (tokenBlacklistRepository.existsByTokenString(token)) {
-                    handleError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token đã bị vô hiệu hóa (Blacklisted)", request.getRequestURI());
+                    handleError(response, 401, "Token đã bị vô hiệu hóa", request.getRequestURI());
                     return;
                 }
 
